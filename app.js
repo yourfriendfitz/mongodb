@@ -20,6 +20,13 @@ const PostSchema = new Schema({
 
 const Post = mongoose.model("Post", PostSchema);
 
+const SnippetSchema = new Schema({
+  title: String,
+  body: String
+});
+
+const Snippet = mongoose.model("Snippet", SnippetSchema);
+
 const logger = function(req, res, next) {
   console.log("logging");
   next();
@@ -44,6 +51,30 @@ app.post("/post", (req, res) => {
 app.get("/posts", (req, res) => {
   Post.find({}, (error, posts) => {
     error ? res.json(error) : res.json(posts);
+  });
+});
+
+app.post("/snippet", (req, res) => {
+  const [title, body] = [req.body.title, req.body.body];
+  const snippet = new Snippet({
+    title,
+    body
+  });
+  snippet.save((error, snippet) => {
+    error ? res.json(error) : res.json(snippet);
+  });
+});
+
+app.post("/snippet/delete/:id", (req, res) => {
+  const id = req.params.id;
+  Snippet.findByIdAndRemove(id, (error, response) => {
+    error ? res.json(error) : res.json(response);
+  });
+});
+
+app.get("/snippets", (req, res) => {
+  Snippet.find({}, (error, snippets) => {
+    error ? res.json(error) : res.json(snippets);
   });
 });
 
