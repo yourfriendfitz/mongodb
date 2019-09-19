@@ -54,6 +54,17 @@ app.get("/posts", (req, res) => {
   });
 });
 
+// async/await example
+
+/* app.get("/posts", async (req, res) => {
+  try {
+    const posts = awaitPost.find({});
+    res.json(posts);
+  } catch (error) {
+    res.json(error);
+  }
+}); */
+
 app.post("/snippet", (req, res) => {
   const [title, body] = [req.body.title, req.body.body];
   const snippet = new Snippet({
