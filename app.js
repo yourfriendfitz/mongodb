@@ -27,6 +27,33 @@ const SnippetSchema = new Schema({
 
 const Snippet = mongoose.model("Snippet", SnippetSchema);
 
+const QuestionSchema = new Schema({
+  tag: String,
+  body: String,
+  selections: Object,
+  answer: String
+});
+
+const Question = mongoose.model("Question", QuestionSchema);
+
+const ModelDeleteById = (Model, id) => {
+  Model.findByIdAndRemove(id, (error, response) => {
+    error ? res.json(error) : res.json(response);
+  });
+};
+
+const ModelFindAll = (Model, res) => {
+  Model.find({}, (error, snippets) => {
+    error ? res.json(error) : res.json(snippets);
+  });
+};
+
+const ModelSave = (newModel, res) => {
+  newModel.save((error, snippet) => {
+    error ? res.json(error) : res.json(snippet);
+  });
+};
+
 const logger = function(req, res, next) {
   console.log("logging");
   next();
@@ -43,15 +70,11 @@ app.post("/post", (req, res) => {
   const post = new Post({
     message
   });
-  post.save(error => {
-    error ? res.json({ error: "Unable to save" }) : res.json(post);
-  });
+  ModelSave(post, res);
 });
 
 app.get("/posts", (req, res) => {
-  Post.find({}, (error, posts) => {
-    error ? res.json(error) : res.json(posts);
-  });
+  ModelFindAll(Post, res);
 });
 
 // async/await example
@@ -71,24 +94,40 @@ app.post("/snippet", (req, res) => {
     title,
     body
   });
-  snippet.save((error, snippet) => {
-    error ? res.json(error) : res.json(snippet);
-  });
+  ModelSave(snippet, res);
 });
 
 app.post("/snippet/delete/:id", (req, res) => {
   const id = req.params.id;
-  Snippet.findByIdAndRemove(id, (error, response) => {
-    error ? res.json(error) : res.json(response);
-  });
+  ModelDeleteById(Snippet, id);
 });
 
 app.get("/snippets", (req, res) => {
-  Snippet.find({}, (error, snippets) => {
-    error ? res.json(error) : res.json(snippets);
-  });
+  ModelFindAll(Snippet, res);
 });
 
-app.listen(1000, () => {
-  console.log("Listening on 1000");
+app.post("/question", (req, res) => {
+  const selections = req.body.selections.split(",");
+  const [tag, body, answer] = [req.body.tag, req.body.body, req.body.answer];
+  const question = new Question({
+    tag,
+    body,
+    selections,
+    answer
+  });
+  ModelSave(question, res);
+});
+
+app.get("/questions", (req, res) => {
+  ModelFindAll(Question, res);
+});
+
+app.post("/question/delete/:id", (req, res) => {
+  const id = req.params.id;
+  ModelDeleteById(Question, id);
+});
+
+// listen for requests :)
+const listener = app.listen(process.env.PORT, function() {
+  console.log("Your app is listening on port " + listener.address().port);
 });
