@@ -36,6 +36,12 @@ const QuestionSchema = new Schema({
 
 const Question = mongoose.model("Question", QuestionSchema);
 
+const WinnerSchema = new Schema({
+  name: String
+});
+
+const Winner = mongoose.model("Winner", WinnerSchema);
+
 const ModelDeleteById = (Model, id) => {
   Model.findByIdAndRemove(id, (error, response) => {
     error ? res.json(error) : res.json(response);
@@ -125,6 +131,18 @@ app.get("/questions", (req, res) => {
 app.post("/question/delete/:id", (req, res) => {
   const id = req.params.id;
   ModelDeleteById(Question, id);
+});
+
+app.post("/winner", (req, res) => {
+  const name = req.body.name;
+  const winner = new Winner({
+    name
+  });
+  ModelSave(winner, res);
+});
+
+app.get("/winners", (req, res) => {
+  ModelFindAll(Winner, res);
 });
 
 // listen for requests :)
