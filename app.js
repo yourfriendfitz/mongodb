@@ -1,10 +1,36 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 const app = express();
+const fs = require("fs");
+const path = require("path");
+const multer = require("multer"); //FOR FILE UPLOAD
+const storage = multer.diskStorage({
+  //multers disk storage settings
+  destination: function(req, file, cb) {
+    cb(null, "./public"); //image storage path
+  },
+  filename: function(req, file, cb) {
+    cb(
+      null,
+      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
+    );
+  }
+});
+
+const upload = multer({
+  //multer settings
+  storage: storage
+}).single("file");
+
 require("dotenv").config();
 
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(express.static(path.join(__dirname, "public")));
+
+app.use(multer({ dest: "./public/uploads/" }).single("file"));
 
 mongoose.connect(process.env.CONNECTION_STRING, {
   useNewUrlParser: true,
@@ -20,12 +46,12 @@ const PostSchema = new Schema({
 
 const Post = mongoose.model("Post", PostSchema);
 
-const SnippetSchema = new Schema({
+const modelschema = new Schema({
   title: String,
   body: String
 });
 
-const Snippet = mongoose.model("Snippet", SnippetSchema);
+const Snippet = mongoose.model("Snippet", modelschema);
 
 const QuestionSchema = new Schema({
   tag: String,
@@ -37,10 +63,21 @@ const QuestionSchema = new Schema({
 const Question = mongoose.model("Question", QuestionSchema);
 
 const WinnerSchema = new Schema({
-  name: String
+  name: String,
+  date: String
 });
 
 const Winner = mongoose.model("Winner", WinnerSchema);
+
+const IntakeSchema = new Schema({
+  name: String,
+  age: String,
+  location: String,
+  type: String,
+  imgUrl: String
+});
+
+const Intake = mongoose.model("Intake", IntakeSchema);
 
 const ModelDeleteById = (Model, id) => {
   Model.findByIdAndRemove(id, (error, response) => {
@@ -49,14 +86,20 @@ const ModelDeleteById = (Model, id) => {
 };
 
 const ModelFindAll = (Model, res) => {
-  Model.find({}, (error, snippets) => {
-    error ? res.json(error) : res.json(snippets);
+  Model.find({}, (error, models) => {
+    error ? res.json(error) : res.json(models);
+  });
+};
+
+const ModelFindByTag = (Model, tag, res) => {
+  Model.find({ tag }, (error, models) => {
+    error ? res.json(error) : res.json(models);
   });
 };
 
 const ModelSave = (newModel, res) => {
-  newModel.save((error, snippet) => {
-    error ? res.json(error) : res.json(snippet);
+  newModel.save((error, model) => {
+    error ? res.json(error) : res.json(model);
   });
 };
 
@@ -133,16 +176,59 @@ app.post("/question/delete/:id", (req, res) => {
   ModelDeleteById(Question, id);
 });
 
+app.get("/questions/:tag", (req, res) => {
+  const tag = req.params.tag;
+  ModelFindByTag(Question, tag, res);
+});
+
 app.post("/winner", (req, res) => {
   const name = req.body.name;
+  const date = new Date();
   const winner = new Winner({
-    name
+    name,
+    date
   });
   ModelSave(winner, res);
 });
 
 app.get("/winners", (req, res) => {
   ModelFindAll(Winner, res);
+});
+
+app.post("/winner/delete/:id", (req, res) => {
+  const id = req.params.id;
+  ModelDeleteById(Winner, id);
+});
+
+app.post("/intake", upload, (req, res) => {
+  if (req.file) {
+    upload(req, res, function(err) {
+      if (err) {
+        // An error occurred when uploading
+        return res.status(422).send("an Error occured");
+      }
+      // No error occured.
+      path = req.file.path;
+    });
+  }
+  const name = req.body.name;
+  const age = req.body.age;
+  const location = req.body.location;
+  const type = req.body.type;
+  const imgUrl = req.body.imgUrl;
+  const intake = new Intake({
+    name,
+    age,
+    location,
+    type,
+    imgUrl
+  });
+  ModelSave(intake, res);
+});
+
+app.post("/intake/upload", upload, (req, res) => {
+  console.log(req.file);
+  res.json(req.file);
 });
 
 // listen for requests :)
